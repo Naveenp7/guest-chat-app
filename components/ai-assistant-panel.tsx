@@ -1,0 +1,243 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useRef, useEffect } from "react"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
+import { Sparkles, Send, Loader2, Bot, User, X, Minimize2, Maximize2 } from "lucide-react"
+import { type AIMessage, getAIResponse, analyzeCode } from "@/lib/ai"
+import type { Message } from "@/lib/firebase"
+import { cn } from "@/lib/utils"
+
+interface AIAssistantPanelProps {
+  isOpen: boolean
+  onToggle: () => void
+  chatMessages: Message[]
+  currentRoom: string
+  isMinimized: boolean
+  onMinimizeToggle: () => void
+}
+
+export function AIAssistantPanel({
+  isOpen,
+  onToggle,
+  chatMessages,
+  currentRoom,
+  isMinimized,
+  onMinimizeToggle,
+}: AIAssistantPanelProps) {
+  const [aiMessages, setAiMessages] = useState<AIMessage[]>([
+    {
+      id: "1",
+      role: "assistant",
+      content: `Hi! I'm your AI coding assistant. I can help you with programming questions, code analysis, debugging, and explanations. Feel free to ask me anything about the code being shared in ${currentRoom}!`,
+      timestamp: new Date(),
+    },
+  ])
+  const [inputMessage, setInputMessage] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [aiMessages])
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!inputMessage.trim() || isLoading) return
+
+    const userMessage: AIMessage = {
+      id: Date.now().toString(),
+      role: "user",
+      content: inputMessage.trim(),
+      timestamp: new Date(),
+    }
+
+    setAiMessages((prev) => [...prev, userMessage])
+    setInputMessage("")
+    setIsLoading(true)
+
+    try {
+      const response = await getAIResponse(inputMessage.trim(), chatMessages, currentRoom)
+
+      const assistantMessage: AIMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: response,
+        timestamp: new Date(),
+      }
+
+      setAiMessages((prev) => [...prev, assistantMessage])
+    } catch (error) {
+      const errorMessage: AIMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
+        timestamp: new Date(),
+      }
+      setAiMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAnalyzeLatestCode = async () => {
+    const latestCodeMessage = [...chatMessages].reverse().find((msg) => msg.type === "code")
+
+    if (!latestCodeMessage) {
+      const noCodeMessage: AIMessage = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: "No code found in recent messages to analyze.",
+        timestamp: new Date(),
+      }
+      setAiMessages((prev) => [...prev, noCodeMessage])
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const analysis = await analyzeCode(latestCodeMessage.text, latestCodeMessage.codeLanguage || "unknown")
+
+      const analysisMessage: AIMessage = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: `**Code Analysis:**\n\n${analysis}`,
+        timestamp: new Date(),
+      }
+
+      setAiMessages((prev) => [...prev, analysisMessage])
+    } catch (error) {
+      const errorMessage: AIMessage = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: "Failed to analyze the code. Please try again.",
+        timestamp: new Date(),
+      }
+      setAiMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <Card
+      className={cn(
+        "fixed right-4 bottom-4 w-96 bg-card border shadow-lg transition-all duration-200",
+        isMinimized ? "h-14" : "h-[500px]",
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-3 border-b">
+        <div className="flex items-center gap-2">
+          <Bot className="h-5 w-5 text-primary" />
+          <span className="font-semibold">AI Assistant</span>
+          <Badge variant="secondary" className="text-xs">
+            {currentRoom}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={onMinimizeToggle} className="h-8 w-8 p-0">
+            {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onToggle} className="h-8 w-8 p-0">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {!isMinimized && (
+        <>
+          {/* Messages */}
+          <ScrollArea className="flex-1 p-3 h-[360px]">
+            <div className="space-y-3">
+              {aiMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn("flex gap-2", message.role === "user" ? "justify-end" : "justify-start")}
+                >
+                  {message.role === "assistant" && (
+                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <Bot className="h-3 w-3 text-primary" />
+                    </div>
+                  )}
+
+                  <div
+                    className={cn(
+                      "max-w-[280px] p-2 rounded-lg text-sm",
+                      message.role === "user" ? "bg-primary text-primary-foreground ml-8" : "bg-muted",
+                    )}
+                  >
+                    <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                    <div className="text-xs opacity-70 mt-1">
+                      {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  </div>
+
+                  {message.role === "user" && (
+                    <div className="w-6 h-6 bg-secondary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <User className="h-3 w-3 text-secondary" />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {isLoading && (
+                <div className="flex gap-2 justify-start">
+                  <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="h-3 w-3 text-primary" />
+                  </div>
+                  <div className="bg-muted p-2 rounded-lg">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+
+          {/* Quick Actions */}
+          <div className="px-3 py-2 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAnalyzeLatestCode}
+              disabled={isLoading}
+              className="w-full text-xs bg-transparent"
+            >
+              <Sparkles className="h-3 w-3 mr-1" />
+              Analyze Latest Code
+            </Button>
+          </div>
+
+          {/* Input */}
+          <div className="p-3 border-t">
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <Input
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Ask me anything..."
+                className="flex-1 text-sm"
+                disabled={isLoading}
+              />
+              <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading} className="px-3">
+                <Send className="h-3 w-3" />
+              </Button>
+            </form>
+          </div>
+        </>
+      )}
+    </Card>
+  )
+}
