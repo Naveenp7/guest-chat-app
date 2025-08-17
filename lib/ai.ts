@@ -1,7 +1,18 @@
 import { generateText } from "ai"
 import { google } from "@ai-sdk/google"
 
-const googleApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+// Access the environment variable correctly for client-side usage
+const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY
+
+// Debug: Log to see if API key is loaded (remove this after testing)
+console.log('Google API Key loaded:', !!googleApiKey, googleApiKey ? 'Key present' : 'Key missing')
+
+// Set the API key in environment for the SDK to pick up automatically
+if (googleApiKey && typeof window !== 'undefined') {
+  // Client-side: Set in process.env for the SDK
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
+}
+
 import type { Message } from "./firebase"
 
 export interface AIMessage {
@@ -17,6 +28,12 @@ export async function getAIResponse(
   currentRoom: string,
 ): Promise<string> {
   try {
+    // Check if API key is available
+    if (!googleApiKey) {
+      console.error('API Key check failed. Available env vars:', Object.keys(process.env).filter(key => key.includes('GOOGLE')))
+      throw new Error("Google Generative AI API key is not configured. Please add NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY to your environment variables.")
+    }
+
     // Build context from recent chat messages
     const contextMessages = chatContext
       .slice(-5)
@@ -37,27 +54,40 @@ Guidelines:
 - Be friendly and encouraging
 - If no context is relevant, just answer the user's question directly`
 
+    // Temporarily set the API key directly in the environment
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
+
     const { text } = await generateText({
-      model: google("gemini-2.0-flash", { apiKey: googleApiKey }),
+      model: google("gemini-2.0-flash"),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
       ],
-      maxTokens: 500,
       temperature: 0.7,
     })
 
     return text
   } catch (error) {
     console.error("AI response error:", error)
+    if (error instanceof Error && error.message.includes("API key")) {
+      throw new Error("AI service is not properly configured. Please contact the administrator.")
+    }
     throw new Error("Failed to get AI response. Please try again.")
   }
 }
 
 export async function analyzeCode(code: string, language: string): Promise<string> {
   try {
+    // Check if API key is available
+    if (!googleApiKey) {
+      throw new Error("Google Generative AI API key is not configured. Please add NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY to your environment variables.")
+    }
+
+    // Temporarily set the API key directly in the environment
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
+
     const { text } = await generateText({
-      model: google("gemini-1.5-flash", { apiKey: googleApiKey }),
+      model: google("gemini-2.0-flash"),
       messages: [
         {
           role: "system",
@@ -72,13 +102,15 @@ Keep your response concise and helpful.`,
           content: `Please analyze this ${language} code:\n\n${code}`,
         },
       ],
-      maxTokens: 400,
       temperature: 0.3,
     })
 
     return text
   } catch (error) {
     console.error("Code analysis error:", error)
+    if (error instanceof Error && error.message.includes("API key")) {
+      throw new Error("AI service is not properly configured. Please contact the administrator.")
+    }
     throw new Error("Failed to analyze code. Please try again.")
   }
 }
