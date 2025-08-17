@@ -9,13 +9,16 @@ import { Input } from "@/components/ui/input"
 import { MessageBubble } from "@/components/message-bubble"
 import { CodeEditorModal } from "@/components/code-editor-modal"
 import { AIAssistantPanel } from "@/components/ai-assistant-panel"
-import { Loader2, MessageSquare, Code, Sparkles, Send, Hash, CodeIcon, Bot, ArrowLeft } from "lucide-react"
+import { Loader2, MessageSquare, Code, Sparkles, Send, Hash, CodeIcon, Bot, ArrowLeft, Menu, X } from "lucide-react"
 import { type Message, sendMessage, listenToMessages, isConfigured } from "@/lib/firebase"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { cn } from "@/lib/utils"
 
 export default function ChatRoomPage() {
   const params = useParams()
   const router = useRouter()
   const roomId = params.roomId as string
+  const isMobile = useIsMobile()
   
   const { user, loading, signInAnonymously, isAuthenticated, username } = useAuth()
   const [messages, setMessages] = useState<Message[]>([])
@@ -24,6 +27,7 @@ export default function ChatRoomPage() {
   const [showCodeEditor, setShowCodeEditor] = useState(false)
   const [showAIAssistant, setShowAIAssistant] = useState(false)
   const [aiMinimized, setAiMinimized] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when new messages arrive
@@ -53,6 +57,15 @@ export default function ChatRoomPage() {
     }
   }, [loading, isAuthenticated, signInAnonymously])
 
+  // Close sidebar when clicking outside on mobile
+  useEffect(() => {
+    if (isMobile && sidebarOpen) {
+      const handleClickOutside = () => setSidebarOpen(false)
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [isMobile, sidebarOpen])
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newMessage.trim() || !user || sending) return
@@ -70,7 +83,6 @@ export default function ChatRoomPage() {
 
   const handleSendCode = async (code: string, language: string) => {
     if (!user) return
-
     await sendMessage(roomId, code, user.uid, username, "code", language)
   }
 
@@ -123,12 +135,33 @@ export default function ChatRoomPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
+      <div className="flex h-screen relative">
+        {/* Mobile Sidebar Overlay */}
+        {isMobile && sidebarOpen && (
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)} />
+        )}
+
         {/* Sidebar */}
-        <div className="w-64 bg-sidebar border-r border-sidebar-border p-4">
-          <div className="flex items-center gap-2 mb-6">
-            <MessageSquare className="h-6 w-6 text-sidebar-primary" />
-            <h1 className="font-bold text-lg text-sidebar-foreground">Chat Room</h1>
+        <div className={cn(
+          "bg-sidebar border-r border-sidebar-border p-4 transition-transform duration-300 ease-in-out",
+          isMobile ? "fixed inset-y-0 left-0 z-50 w-64 transform" : "w-64",
+          isMobile && !sidebarOpen ? "-translate-x-full" : "translate-x-0"
+        )}>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-6 w-6 text-sidebar-primary" />
+              <h1 className="font-bold text-lg text-sidebar-foreground">Chat Room</h1>
+            </div>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
 
           <Button
@@ -143,7 +176,10 @@ export default function ChatRoomPage() {
           <div className="mt-6 pt-4 border-t border-sidebar-border">
             <Button
               variant={showAIAssistant ? "default" : "outline"}
-              onClick={() => setShowAIAssistant(!showAIAssistant)}
+              onClick={() => {
+                setShowAIAssistant(!showAIAssistant)
+                if (isMobile) setSidebarOpen(false)
+              }}
               className="w-full justify-start"
             >
               <Bot className="h-4 w-4 mr-2" />
@@ -158,31 +194,47 @@ export default function ChatRoomPage() {
         </div>
 
         {/* Main chat area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
           <div className="border-b border-border p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
+                {isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSidebarOpen(true)}
+                    className="h-8 w-8 p-0 mr-2"
+                  >
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                )}
                 <Hash className="h-5 w-5 text-primary" />
                 <div>
-                  <h2 className="font-semibold text-lg">{roomId}</h2>
+                  <h2 className={cn("font-semibold", isMobile ? "text-base" : "text-lg")}>
+                    {isMobile && roomId.length > 15 ? `${roomId.slice(0, 15)}...` : roomId}
+                  </h2>
                   <p className="text-sm text-muted-foreground">{messages.length} messages</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowAIAssistant(!showAIAssistant)}
-                  disabled={sending}
-                  className="flex items-center gap-2"
-                >
-                  <Bot className="h-4 w-4" />
-                  AI Help
-                </Button>
+              <div className="flex items-center gap-2">
+                {!isMobile && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAIAssistant(!showAIAssistant)}
+                    disabled={sending}
+                    className="flex items-center gap-2"
+                  >
+                    <Bot className="h-4 w-4" />
+                    AI Help
+                  </Button>
+                )}
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-muted-foreground">Connected</span>
+                  <span className={cn("text-muted-foreground", isMobile ? "text-xs" : "text-sm")}>
+                    {isMobile ? "Online" : "Connected"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -211,7 +263,7 @@ export default function ChatRoomPage() {
             <form onSubmit={handleSendMessage} className="flex gap-2">
               <Input
                 type="text"
-                placeholder={`Message ${roomId}...`}
+                placeholder={isMobile ? `Message...` : `Message ${roomId}...`}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 className="flex-1"
@@ -222,11 +274,12 @@ export default function ChatRoomPage() {
                 variant="outline"
                 onClick={() => setShowCodeEditor(true)}
                 disabled={sending}
-                className="px-3"
+                className="px-3 flex-shrink-0"
+                title="Share Code"
               >
                 <CodeIcon className="h-4 w-4" />
               </Button>
-              <Button type="submit" disabled={!newMessage.trim() || sending}>
+              <Button type="submit" disabled={!newMessage.trim() || sending} className="flex-shrink-0">
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
             </form>

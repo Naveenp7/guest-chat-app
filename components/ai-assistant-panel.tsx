@@ -12,6 +12,7 @@ import { Sparkles, Send, Loader2, Bot, User, X, Minimize2, Maximize2 } from "luc
 import { type AIMessage, getAIResponse, analyzeCode } from "@/lib/ai"
 import type { Message } from "@/lib/firebase"
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface AIAssistantPanelProps {
   isOpen: boolean
@@ -30,6 +31,7 @@ export function AIAssistantPanel({
   isMinimized,
   onMinimizeToggle,
 }: AIAssistantPanelProps) {
+  const isMobile = useIsMobile()
   const [aiMessages, setAiMessages] = useState<AIMessage[]>([
     {
       id: "1",
@@ -130,6 +132,107 @@ export function AIAssistantPanel({
 
   if (!isOpen) return null
 
+  // Mobile: Full screen overlay
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-card">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            <span className="font-semibold">AI Assistant</span>
+            <Badge variant="secondary" className="text-xs">
+              {currentRoom.length > 10 ? `${currentRoom.slice(0, 10)}...` : currentRoom}
+            </Badge>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onToggle} className="h-8 w-8 p-0">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Messages */}
+        <ScrollArea className="flex-1 p-4" style={{ height: 'calc(100vh - 140px)' }}>
+          <div className="space-y-3">
+            {aiMessages.map((message) => (
+              <div
+                key={message.id}
+                className={cn("flex gap-2", message.role === "user" ? "justify-end" : "justify-start")}
+              >
+                {message.role === "assistant" && (
+                  <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="h-3 w-3 text-primary" />
+                  </div>
+                )}
+
+                <div
+                  className={cn(
+                    "max-w-[85%] p-3 rounded-lg text-sm",
+                    message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
+                  )}
+                >
+                  <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                  <div className="text-xs opacity-70 mt-2">
+                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                </div>
+
+                {message.role === "user" && (
+                  <div className="w-6 h-6 bg-secondary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="h-3 w-3 text-secondary" />
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {isLoading && (
+              <div className="flex gap-2 justify-start">
+                <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <Bot className="h-3 w-3 text-primary" />
+                </div>
+                <div className="bg-muted p-3 rounded-lg">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+
+        {/* Quick Actions */}
+        <div className="px-4 py-2 border-t bg-muted/30">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAnalyzeLatestCode}
+            disabled={isLoading}
+            className="w-full text-xs"
+          >
+            <Sparkles className="h-3 w-3 mr-1" />
+            Analyze Latest Code
+          </Button>
+        </div>
+
+        {/* Input */}
+        <div className="p-4 border-t bg-card">
+          <form onSubmit={handleSendMessage} className="flex gap-2">
+            <Input
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Ask me anything..."
+              className="flex-1 text-sm"
+              disabled={isLoading}
+            />
+            <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading} className="px-3">
+              <Send className="h-3 w-3" />
+            </Button>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+  // Desktop: Floating panel
   return (
     <Card
       className={cn(
