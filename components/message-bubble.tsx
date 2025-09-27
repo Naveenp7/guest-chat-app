@@ -4,10 +4,12 @@ import type { Message } from "@/lib/firebase"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Code, User, Copy, Check } from "lucide-react"
+import { Code, User, Copy, Check, Download } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { getDownloadUrl } from "@/lib/cloudinary"
+import Image from "next/image"
 
 interface MessageBubbleProps {
   message: Message
@@ -114,6 +116,34 @@ export function MessageBubble({ message, isOwnMessage }: MessageBubbleProps) {
                   <code className="font-mono whitespace-pre-wrap break-words">{message.text}</code>
                 </pre>
               </div>
+            </div>
+          ) : message.type === "image" ? (
+            <div className="relative">
+              <div className="relative rounded-lg overflow-hidden" style={{ maxWidth: '300px', maxHeight: '400px' }}>
+                <Image
+                  src={message.imageUrl || ""}
+                  alt="Shared image"
+                  width={300}
+                  height={300}
+                  className="object-contain max-w-full h-auto"
+                  style={{ minHeight: '200px', backgroundColor: '#f0f0f0' }}
+                />
+              </div>
+              {message.imageId && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute bottom-2 right-2 opacity-90 hover:opacity-100"
+                  onClick={() => {
+                    const downloadUrl = getDownloadUrl(message.imageId!);
+                    window.open(downloadUrl, "_blank");
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Download
+                </Button>
+              )}
+              <p className="mt-2 text-sm text-muted-foreground">{message.text}</p>
             </div>
           ) : (
             <div 

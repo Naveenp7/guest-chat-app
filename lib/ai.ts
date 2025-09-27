@@ -4,11 +4,13 @@ import { google } from "@ai-sdk/google"
 // Access the environment variable correctly for client-side usage
 const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY
 
-// Debug: Log to see if API key is loaded (remove this after testing)
-console.log('Google API Key loaded:', !!googleApiKey, googleApiKey ? 'Key present' : 'Key missing')
+// Validate API key format and presence
+const isValidApiKey = googleApiKey &&
+  googleApiKey !== 'your_google_api_key_here' &&
+  googleApiKey.trim().length > 0
 
 // Set the API key in environment for the SDK to pick up automatically
-if (googleApiKey && typeof window !== 'undefined') {
+if (isValidApiKey && typeof window !== 'undefined') {
   // Client-side: Set in process.env for the SDK
   process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
 }
@@ -28,10 +30,15 @@ export async function getAIResponse(
   currentRoom: string,
 ): Promise<string> {
   try {
-    // Check if API key is available
-    if (!googleApiKey) {
-      console.error('API Key check failed. Available env vars:', Object.keys(process.env).filter(key => key.includes('GOOGLE')))
-      throw new Error("Google Generative AI API key is not configured. Please add NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY to your environment variables.")
+    // Check if API key is available and valid
+    if (!isValidApiKey) {
+      if (!googleApiKey) {
+        throw new Error("Google Generative AI API key is not configured. Please add NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY to your .env.local file.")
+      } else if (googleApiKey === 'your_google_api_key_here') {
+        throw new Error("Please replace 'your_google_api_key_here' with your actual Google API key in .env.local file.")
+      } else {
+        throw new Error("Invalid Google API key format. Please check your NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY in .env.local file.")
+      }
     }
 
     // Build context from recent chat messages
@@ -54,7 +61,7 @@ Guidelines:
 - Be friendly and encouraging
 - If no context is relevant, just answer the user's question directly`
 
-    // Temporarily set the API key directly in the environment
+    // Set the API key directly in the environment for the SDK
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
 
     const { text } = await generateText({
@@ -70,7 +77,7 @@ Guidelines:
   } catch (error) {
     console.error("AI response error:", error)
     if (error instanceof Error && error.message.includes("API key")) {
-      throw new Error("AI service is not properly configured. Please contact the administrator.")
+      throw new Error("AI service configuration error. Please check your Google API key setup.")
     }
     throw new Error("Failed to get AI response. Please try again.")
   }
@@ -78,12 +85,18 @@ Guidelines:
 
 export async function analyzeCode(code: string, language: string): Promise<string> {
   try {
-    // Check if API key is available
-    if (!googleApiKey) {
-      throw new Error("Google Generative AI API key is not configured. Please add NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY to your environment variables.")
+    // Check if API key is available and valid
+    if (!isValidApiKey) {
+      if (!googleApiKey) {
+        throw new Error("Google Generative AI API key is not configured. Please add NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY to your .env.local file.")
+      } else if (googleApiKey === 'your_google_api_key_here') {
+        throw new Error("Please replace 'your_google_api_key_here' with your actual Google API key in .env.local file.")
+      } else {
+        throw new Error("Invalid Google API key format. Please check your NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY in .env.local file.")
+      }
     }
 
-    // Temporarily set the API key directly in the environment
+    // Set the API key directly in the environment for the SDK
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
 
     const { text } = await generateText({
@@ -109,7 +122,7 @@ Keep your response concise and helpful.`,
   } catch (error) {
     console.error("Code analysis error:", error)
     if (error instanceof Error && error.message.includes("API key")) {
-      throw new Error("AI service is not properly configured. Please contact the administrator.")
+      throw new Error("AI service configuration error. Please check your Google API key setup.")
     }
     throw new Error("Failed to analyze code. Please try again.")
   }

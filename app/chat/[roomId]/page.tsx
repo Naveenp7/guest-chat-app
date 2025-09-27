@@ -9,10 +9,11 @@ import { Input } from "@/components/ui/input"
 import { MessageBubble } from "@/components/message-bubble"
 import { CodeEditorModal } from "@/components/code-editor-modal"
 import { AIAssistantPanel } from "@/components/ai-assistant-panel"
-import { Loader2, MessageSquare, Code, Sparkles, Send, Hash, CodeIcon, Bot, ArrowLeft, Menu, X } from "lucide-react"
+import { Loader2, MessageSquare, Code, Sparkles, Send, Hash, CodeIcon, Bot, ArrowLeft, Menu, X, ImageIcon } from "lucide-react"
 import { type Message, sendMessage, listenToMessages, isConfigured } from "@/lib/firebase"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
+import { uploadImage } from "@/lib/cloudinary"
 
 export default function ChatRoomPage() {
   const params = useParams()
@@ -269,6 +270,37 @@ export default function ChatRoomPage() {
                 className="flex-1"
                 disabled={sending}
               />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id="image-upload"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file && user) {
+                    setSending(true);
+                    try {
+                      const result = await uploadImage(file);
+                      await sendMessage(roomId, "Shared an image", user.uid, username, "image", undefined, result.secure_url, result.public_id);
+                    } catch (error) {
+                      console.error("Failed to upload image:", error);
+                    } finally {
+                      setSending(false);
+                      e.target.value = ''; // Reset the input
+                    }
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById("image-upload")?.click()}
+                disabled={sending}
+                className="px-3 flex-shrink-0"
+                title="Share Image"
+              >
+                <ImageIcon className="h-4 w-4" />
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -296,6 +328,10 @@ export default function ChatRoomPage() {
         currentRoom={roomId}
         isMinimized={aiMinimized}
         onMinimizeToggle={() => setAiMinimized(!aiMinimized)}
+        onSendMessage={async (text, type = "text", imageUrl, imageId) => {
+          if (!user) return;
+          await sendMessage(roomId, text, user.uid, username, type, undefined, imageUrl, imageId);
+        }}
       />
     </div>
   )

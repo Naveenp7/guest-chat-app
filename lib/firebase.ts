@@ -54,8 +54,10 @@ export interface Message {
   username: string
   timestamp: Timestamp
   roomId: string
-  type: "text" | "code"
+  type: "text" | "code" | "image"
   codeLanguage?: string
+  imageUrl?: string
+  imageId?: string
 }
 
 // Room interface
@@ -90,8 +92,10 @@ export const sendMessage = async (
   text: string,
   userId: string,
   username: string,
-  type: "text" | "code" = "text",
+  type: "text" | "code" | "image" = "text",
   codeLanguage?: string,
+  imageUrl?: string,
+  imageId?: string,
 ) => {
   try {
     if (!isConfigured) {
@@ -106,6 +110,7 @@ export const sendMessage = async (
       roomId,
       type,
       ...(type === "code" && codeLanguage && { codeLanguage }),
+      ...(type === "image" && { imageUrl, imageId }),
     })
   } catch (error) {
     console.error("Error sending message:", error)

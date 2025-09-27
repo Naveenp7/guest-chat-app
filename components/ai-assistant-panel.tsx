@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { Sparkles, Send, Loader2, Bot, User, X, Minimize2, Maximize2 } from "lucide-react"
+import { Sparkles, Send, Loader2, Bot, User, X, Minimize2, Maximize2, Image as ImageIcon } from "lucide-react"
+import { uploadImage } from "@/lib/cloudinary"
 import { type AIMessage, getAIResponse, analyzeCode } from "@/lib/ai"
 import type { Message } from "@/lib/firebase"
 import { cn } from "@/lib/utils"
@@ -21,6 +22,7 @@ interface AIAssistantPanelProps {
   currentRoom: string
   isMinimized: boolean
   onMinimizeToggle: () => void
+  onSendMessage: (text: string, type?: "text" | "code" | "image", imageUrl?: string, imageId?: string) => void
 }
 
 export function AIAssistantPanel({
@@ -79,10 +81,22 @@ export function AIAssistantPanel({
 
       setAiMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
+      let errorContent = "Sorry, I encountered an error. Please try again."
+
+      if (error instanceof Error) {
+        if (error.message.includes("Google Generative AI API key is not configured")) {
+          errorContent = "⚠️ AI service is not configured. Please set up your Google API key in the .env.local file. You can get one from https://ai.google.dev/"
+        } else if (error.message.includes("replace 'your_google_api_key_here'")) {
+          errorContent = "⚠️ Please replace the placeholder API key with your actual Google API key in .env.local file."
+        } else if (error.message.includes("configuration error")) {
+          errorContent = "⚠️ There's an issue with the AI service configuration. Please check your Google API key setup."
+        }
+      }
+
       const errorMessage: AIMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
+        content: errorContent,
         timestamp: new Date(),
       }
       setAiMessages((prev) => [...prev, errorMessage])
@@ -118,10 +132,22 @@ export function AIAssistantPanel({
 
       setAiMessages((prev) => [...prev, analysisMessage])
     } catch (error) {
+      let errorContent = "Failed to analyze the code. Please try again."
+
+      if (error instanceof Error) {
+        if (error.message.includes("Google Generative AI API key is not configured")) {
+          errorContent = "⚠️ AI service is not configured. Please set up your Google API key in the .env.local file. You can get one from https://ai.google.dev/"
+        } else if (error.message.includes("replace 'your_google_api_key_here'")) {
+          errorContent = "⚠️ Please replace the placeholder API key with your actual Google API key in .env.local file."
+        } else if (error.message.includes("configuration error")) {
+          errorContent = "⚠️ There's an issue with the AI service configuration. Please check your Google API key setup."
+        }
+      }
+
       const errorMessage: AIMessage = {
         id: Date.now().toString(),
         role: "assistant",
-        content: "Failed to analyze the code. Please try again.",
+        content: errorContent,
         timestamp: new Date(),
       }
       setAiMessages((prev) => [...prev, errorMessage])
@@ -215,7 +241,7 @@ export function AIAssistantPanel({
 
         {/* Input */}
         <div className="p-4 border-t bg-card">
-          <form onSubmit={handleSendMessage} className="flex gap-2">
+          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
             <Input
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
@@ -223,6 +249,36 @@ export function AIAssistantPanel({
               className="flex-1 text-sm"
               disabled={isLoading}
             />
+            <Input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              id="image-upload"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setIsLoading(true);
+                  try {
+                    const result = await uploadImage(file);
+                    onSendMessage("Shared an image", "image", result.secure_url, result.public_id);
+                  } catch (error) {
+                    console.error("Failed to upload image:", error);
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }
+              }}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={isLoading}
+              onClick={() => document.getElementById("image-upload")?.click()}
+              className="px-3"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
             <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading} className="px-3">
               <Send className="h-3 w-3" />
             </Button>
