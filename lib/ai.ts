@@ -65,7 +65,7 @@ Guidelines:
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
 
     const { text } = await generateText({
-      model: google("gemini-1.5-flash"),
+      model: google("gemini-2.5-flash"),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
@@ -100,7 +100,7 @@ export async function analyzeCode(code: string, language: string): Promise<strin
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
 
     const { text } = await generateText({
-      model: google("gemini-1.5-flash"),
+      model: google("gemini-2.5-flash"),
       messages: [
         {
           role: "system",
