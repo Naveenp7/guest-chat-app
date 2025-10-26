@@ -1,5 +1,5 @@
 import { generateText } from "ai"
-import { google } from "@ai-sdk/google"
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 
 // Access the environment variable correctly for client-side usage
 const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
@@ -17,6 +17,8 @@ export interface AIMessage {
   content: string
   timestamp: Date
 }
+
+const googleProvider = createGoogleGenerativeAI({ apiKey: googleApiKey });
 
 export async function getAIResponse(
   userMessage: string,
@@ -56,7 +58,7 @@ Guidelines:
 - If no context is relevant, just answer the user's question directly`
 
     const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: googleProvider("gemini-2.5-flash"),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
@@ -88,7 +90,7 @@ export async function analyzeCode(code: string, language: string): Promise<strin
     }
 
     const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: googleProvider("gemini-2.5-flash"),
       messages: [
         {
           role: "system",
