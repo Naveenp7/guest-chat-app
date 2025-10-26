@@ -2,7 +2,7 @@ import { generateText } from "ai"
 import { google } from "@ai-sdk/google"
 
 // Access the environment variable correctly for client-side usage
-const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY
+const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
 
 // Validate API key format and presence
 const isValidApiKey = googleApiKey &&
