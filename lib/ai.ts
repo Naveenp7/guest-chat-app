@@ -9,6 +9,12 @@ const isValidApiKey = googleApiKey &&
   googleApiKey !== 'your_google_api_key_here' &&
   googleApiKey.trim().length > 0
 
+// Set the API key in environment for the SDK to pick up automatically
+if (isValidApiKey && typeof window !== 'undefined') {
+  // Client-side: Set in process.env for the SDK
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
+}
+
 import type { Message } from "./firebase"
 
 export interface AIMessage {
@@ -55,6 +61,9 @@ Guidelines:
 - Be friendly and encouraging
 - If no context is relevant, just answer the user's question directly`
 
+    // Set the API key directly in the environment for the SDK
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
+
     const { text } = await generateText({
       model: google("gemini-2.5-flash"),
       messages: [
@@ -86,6 +95,9 @@ export async function analyzeCode(code: string, language: string): Promise<strin
         throw new Error("Invalid Google API key format. Please check your NEXT_PUBLIC_GOOGLE_GENERATIVE_AI_API_KEY in .env.local file.")
       }
     }
+
+    // Set the API key directly in the environment for the SDK
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey
 
     const { text } = await generateText({
       model: google("gemini-2.5-flash"),
