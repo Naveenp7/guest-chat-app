@@ -177,12 +177,12 @@ export function AIAssistantPanel({
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-w-0">
           <div className="space-y-3 p-3">
             {aiMessages.map((message) => (
               <div
                 key={message.id}
-                className={cn("flex gap-2", message.role === "user" ? "justify-end" : "justify-start")}
+                className={cn("flex gap-2 min-w-0", message.role === "user" ? "justify-end" : "justify-start")}
               >
                 {message.role === "assistant" && (
                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
@@ -192,9 +192,10 @@ export function AIAssistantPanel({
 
                 <div
                   className={cn(
-                    "max-w-[240px] p-2 rounded-lg text-sm",
+                    "p-2 rounded-lg text-sm break-words overflow-hidden",
                     message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
                   )}
+                  style={{ maxWidth: "calc(100% - 2rem)" }}
                 >
                   <div className="whitespace-pre-wrap break-words">{message.content}</div>
                   <div className="text-xs opacity-70 mt-1">
@@ -215,8 +216,8 @@ export function AIAssistantPanel({
                 <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                   <Bot className="h-3 w-3 text-primary" />
                 </div>
-                <div className="bg-muted p-2 rounded-lg">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="bg-muted p-2 rounded-lg flex items-center">
+                  <Loader2 className="h-3 w-3 animate-spin" />
                 </div>
               </div>
             )}
@@ -277,12 +278,12 @@ export function AIAssistantPanel({
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 p-4" style={{ height: 'calc(100vh - 140px)' }}>
+        <ScrollArea className="flex-1 p-4 min-w-0" style={{ height: 'calc(100vh - 140px)' }}>
           <div className="space-y-3">
             {aiMessages.map((message) => (
               <div
                 key={message.id}
-                className={cn("flex gap-2", message.role === "user" ? "justify-end" : "justify-start")}
+                className={cn("flex gap-2 min-w-0", message.role === "user" ? "justify-end" : "justify-start")}
               >
                 {message.role === "assistant" && (
                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
@@ -292,9 +293,10 @@ export function AIAssistantPanel({
 
                 <div
                   className={cn(
-                    "max-w-[85%] p-3 rounded-lg text-sm",
+                    "p-3 rounded-lg text-sm break-words overflow-hidden",
                     message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
                   )}
+                  style={{ maxWidth: "85%" }}
                 >
                   <div className="whitespace-pre-wrap break-words">{message.content}</div>
                   <div className="text-xs opacity-70 mt-2">
@@ -315,7 +317,7 @@ export function AIAssistantPanel({
                 <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                   <Bot className="h-3 w-3 text-primary" />
                 </div>
-                <div className="bg-muted p-3 rounded-lg">
+                <div className="bg-muted p-3 rounded-lg flex items-center">
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               </div>
