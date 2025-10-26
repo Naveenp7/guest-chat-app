@@ -32,6 +32,7 @@ export function AIAssistantPanel({
   currentRoom,
   isMinimized,
   onMinimizeToggle,
+  onSendMessage,
 }: AIAssistantPanelProps) {
   const isMobile = useIsMobile()
   const [aiMessages, setAiMessages] = useState<AIMessage[]>([
