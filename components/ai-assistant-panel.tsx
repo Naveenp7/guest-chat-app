@@ -23,6 +23,7 @@ interface AIAssistantPanelProps {
   isMinimized: boolean
   onMinimizeToggle: () => void
   onSendMessage: (text: string, type?: "text" | "code" | "image", imageUrl?: string, imageId?: string) => void
+  isSplitScreen?: boolean
 }
 
 export function AIAssistantPanel({
@@ -33,6 +34,7 @@ export function AIAssistantPanel({
   isMinimized,
   onMinimizeToggle,
   onSendMessage,
+  isSplitScreen = false,
 }: AIAssistantPanelProps) {
   const isMobile = useIsMobile()
   const [aiMessages, setAiMessages] = useState<AIMessage[]>([
@@ -157,29 +159,26 @@ export function AIAssistantPanel({
     }
   }
 
-  if (!isOpen) return null
+  if (!isOpen && !isSplitScreen) return null
 
-  // Mobile: Full screen overlay
-  if (isMobile) {
+  // Desktop Split Screen Mode
+  if (isSplitScreen && !isMobile) {
     return (
-      <div className="fixed inset-0 z-50 bg-background">
+      <div className="w-full h-full flex flex-col bg-card">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-card">
-          <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-primary" />
+        <div className="flex items-center justify-between p-3 border-b">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Bot className="h-5 w-5 text-primary flex-shrink-0" />
             <span className="font-semibold">AI Assistant</span>
-            <Badge variant="secondary" className="text-xs">
-              {currentRoom.length > 10 ? `${currentRoom.slice(0, 10)}...` : currentRoom}
-            </Badge>
           </div>
-          <Button variant="ghost" size="sm" onClick={onToggle} className="h-8 w-8 p-0">
+          <Button variant="ghost" size="sm" onClick={onToggle} className="h-8 w-8 p-0 flex-shrink-0">
             <X className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 p-4" style={{ height: 'calc(100vh - 140px)' }}>
-          <div className="space-y-3">
+        <ScrollArea className="flex-1">
+          <div className="space-y-3 p-3">
             {aiMessages.map((message) => (
               <div
                 key={message.id}
@@ -193,12 +192,12 @@ export function AIAssistantPanel({
 
                 <div
                   className={cn(
-                    "max-w-[85%] p-3 rounded-lg text-sm",
+                    "max-w-[240px] p-2 rounded-lg text-sm",
                     message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
                   )}
                 >
                   <div className="whitespace-pre-wrap break-words">{message.content}</div>
-                  <div className="text-xs opacity-70 mt-2">
+                  <div className="text-xs opacity-70 mt-1">
                     {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </div>
                 </div>
@@ -216,7 +215,7 @@ export function AIAssistantPanel({
                 <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                   <Bot className="h-3 w-3 text-primary" />
                 </div>
-                <div className="bg-muted p-3 rounded-lg">
+                <div className="bg-muted p-2 rounded-lg">
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               </div>
@@ -227,34 +226,139 @@ export function AIAssistantPanel({
         </ScrollArea>
 
         {/* Quick Actions */}
-        <div className="px-4 py-2 border-t bg-muted/30">
+        <div className="px-3 py-2 border-t">
           <Button
             variant="outline"
             size="sm"
             onClick={handleAnalyzeLatestCode}
             disabled={isLoading}
-            className="w-full text-xs"
+            className="w-full text-xs bg-transparent"
           >
             <Sparkles className="h-3 w-3 mr-1" />
-            Analyze Latest Code
+            Analyze Code
           </Button>
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t bg-card">
-          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+        <div className="p-3 border-t">
+          <form onSubmit={handleSendMessage} className="flex gap-2">
             <Input
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Ask me anything..."
+              placeholder="Ask..."
               className="flex-1 text-sm"
               disabled={isLoading}
             />
+            <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading} className="px-3">
+              <Send className="h-3 w-3" />
+            </Button>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+  // Mobile: Full screen overlay
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+              <Bot className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-semibold text-sm">AI Assistant</span>
+              <span className="text-xs text-muted-foreground">
+                {currentRoom.length > 15 ? `${currentRoom.slice(0, 15)}...` : currentRoom}
+              </span>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onToggle} className="h-8 w-8 p-0 flex-shrink-0">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Messages - Scrollable Area */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <ScrollArea className="h-full w-full">
+            <div className="space-y-2 px-3 py-3">
+              {aiMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn("flex gap-2", message.role === "user" ? "flex-row-reverse" : "flex-row")}
+                >
+                  <div className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1",
+                    message.role === "assistant" ? "bg-primary/10" : "bg-secondary/10"
+                  )}>
+                    {message.role === "assistant" ? (
+                      <Bot className="h-3 w-3 text-primary" />
+                    ) : (
+                      <User className="h-3 w-3 text-secondary" />
+                    )}
+                  </div>
+
+                  <div className={cn(
+                    "flex flex-col max-w-[calc(100%-2rem)]",
+                    message.role === "user" ? "items-end" : "items-start"
+                  )}>
+                    <Card className={cn(
+                      "px-3 py-2 rounded-lg text-sm",
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground rounded-br-none"
+                        : "bg-muted rounded-bl-none",
+                    )}>
+                      <div className="whitespace-pre-wrap break-words leading-snug">
+                        {message.content}
+                      </div>
+                    </Card>
+                    <span className="text-xs text-muted-foreground mt-0.5 px-2">
+                      {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              {isLoading && (
+                <div className="flex gap-2">
+                  <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="h-3 w-3 text-primary" />
+                  </div>
+                  <div className="bg-muted px-3 py-2 rounded-lg rounded-bl-none">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex-shrink-0 px-3 py-3 border-t bg-muted/20">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAnalyzeLatestCode}
+            disabled={isLoading}
+            className="w-full text-xs h-8 rounded-lg"
+          >
+            <Sparkles className="h-3 w-3 mr-1.5" />
+            Analyze Code
+          </Button>
+        </div>
+
+        {/* Input */}
+        <div className="flex-shrink-0 p-3 border-t bg-card">
+          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
             <Input
               type="file"
               accept="image/*"
               className="hidden"
-              id="image-upload"
+              id="image-upload-mobile"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -270,18 +374,36 @@ export function AIAssistantPanel({
                 }
               }}
             />
+            <div className="flex-1 flex items-center bg-muted rounded-lg px-3 py-2 gap-1">
+              <Input
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Ask AI..."
+                className="flex-1 text-sm bg-transparent border-0 p-0 h-auto focus-visible:ring-0"
+                disabled={isLoading}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isLoading}
+                onClick={() => document.getElementById("image-upload-mobile")?.click()}
+                className="h-6 w-6 p-0 hover:bg-muted-foreground/10"
+              >
+                <ImageIcon className="h-3.5 w-3.5" />
+              </Button>
+            </div>
             <Button
-              type="button"
-              variant="ghost"
+              type="submit"
+              disabled={!inputMessage.trim() || isLoading}
+              className="h-8 w-8 p-0 rounded-lg flex-shrink-0"
               size="sm"
-              disabled={isLoading}
-              onClick={() => document.getElementById("image-upload")?.click()}
-              className="px-3"
             >
-              <ImageIcon className="h-4 w-4" />
-            </Button>
-            <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading} className="px-3">
-              <Send className="h-3 w-3" />
+              {isLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="h-3.5 w-3.5" />
+              )}
             </Button>
           </form>
         </div>
@@ -289,115 +411,5 @@ export function AIAssistantPanel({
     )
   }
 
-  // Desktop: Floating panel
-  return (
-    <Card
-      className={cn(
-        "fixed right-4 bottom-4 w-96 bg-card border shadow-lg transition-all duration-200",
-        isMinimized ? "h-14" : "h-[500px]",
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b">
-        <div className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
-          <span className="font-semibold">AI Assistant</span>
-          <Badge variant="secondary" className="text-xs">
-            {currentRoom}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={onMinimizeToggle} className="h-8 w-8 p-0">
-            {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onToggle} className="h-8 w-8 p-0">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {!isMinimized && (
-        <>
-          {/* Messages */}
-          <ScrollArea className="flex-1 p-3 h-[360px]">
-            <div className="space-y-3">
-              {aiMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn("flex gap-2", message.role === "user" ? "justify-end" : "justify-start")}
-                >
-                  {message.role === "assistant" && (
-                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                      <Bot className="h-3 w-3 text-primary" />
-                    </div>
-                  )}
-
-                  <div
-                    className={cn(
-                      "max-w-[280px] p-2 rounded-lg text-sm",
-                      message.role === "user" ? "bg-primary text-primary-foreground ml-8" : "bg-muted",
-                    )}
-                  >
-                    <div className="whitespace-pre-wrap break-words">{message.content}</div>
-                    <div className="text-xs opacity-70 mt-1">
-                      {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </div>
-                  </div>
-
-                  {message.role === "user" && (
-                    <div className="w-6 h-6 bg-secondary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                      <User className="h-3 w-3 text-secondary" />
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {isLoading && (
-                <div className="flex gap-2 justify-start">
-                  <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot className="h-3 w-3 text-primary" />
-                  </div>
-                  <div className="bg-muted p-2 rounded-lg">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </div>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
-
-          {/* Quick Actions */}
-          <div className="px-3 py-2 border-t">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAnalyzeLatestCode}
-              disabled={isLoading}
-              className="w-full text-xs bg-transparent"
-            >
-              <Sparkles className="h-3 w-3 mr-1" />
-              Analyze Latest Code
-            </Button>
-          </div>
-
-          {/* Input */}
-          <div className="p-3 border-t">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Input
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Ask me anything..."
-                className="flex-1 text-sm"
-                disabled={isLoading}
-              />
-              <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading} className="px-3">
-                <Send className="h-3 w-3" />
-              </Button>
-            </form>
-          </div>
-        </>
-      )}
-    </Card>
-  )
+  return null
 }

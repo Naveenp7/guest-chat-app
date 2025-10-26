@@ -194,145 +194,181 @@ export default function ChatRoomPage() {
           </div>
         </div>
 
-        {/* Main chat area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Header */}
-          <div className="border-b border-border p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {isMobile && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSidebarOpen(true)}
-                    className="h-8 w-8 p-0 mr-2"
-                  >
-                    <Menu className="h-4 w-4" />
-                  </Button>
-                )}
-                <Hash className="h-5 w-5 text-primary" />
-                <div>
-                  <h2 className={cn("font-semibold", isMobile ? "text-base" : "text-lg")}>
-                    {isMobile && roomId.length > 15 ? `${roomId.slice(0, 15)}...` : roomId}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">{messages.length} messages</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {!isMobile && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAIAssistant(!showAIAssistant)}
-                    disabled={sending}
-                    className="flex items-center gap-2"
-                  >
-                    <Bot className="h-4 w-4" />
-                    AI Help
-                  </Button>
-                )}
+        {/* Main chat area and AI Assistant container */}
+        <div className="flex-1 flex min-w-0">
+          {/* Chat section */}
+          <div className={cn(
+            "flex flex-col min-w-0",
+            isMobile ? "flex-1" : showAIAssistant ? "flex-1" : "flex-1"
+          )}>
+            {/* Header */}
+            <div className="border-b border-border p-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                  <span className={cn("text-muted-foreground", isMobile ? "text-xs" : "text-sm")}>
-                    {isMobile ? "Online" : "Connected"}
-                  </span>
+                  {isMobile && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSidebarOpen(true)}
+                      className="h-8 w-8 p-0 mr-2"
+                    >
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Hash className="h-5 w-5 text-primary" />
+                  <div>
+                    <h2 className={cn("font-semibold", isMobile ? "text-base" : "text-lg")}>
+                      {isMobile && roomId.length > 15 ? `${roomId.slice(0, 15)}...` : roomId}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">{messages.length} messages</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!isMobile && (
+                    <Button
+                      variant={showAIAssistant ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowAIAssistant(!showAIAssistant)}
+                      disabled={sending}
+                      className="flex items-center gap-2"
+                    >
+                      <Bot className="h-4 w-4" />
+                      {showAIAssistant ? "Hide" : "Show"} AI
+                    </Button>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                    <span className={cn("text-muted-foreground", isMobile ? "text-xs" : "text-sm")}>
+                      {isMobile ? "Online" : "Connected"}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Chat messages area */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {messages.length === 0 ? (
-              <Card className="p-6 text-center">
-                <Sparkles className="h-8 w-8 mx-auto mb-4 text-primary" />
-                <h3 className="font-semibold mb-2">Welcome to the room!</h3>
-                <p className="text-muted-foreground">Start the conversation by sending the first message.</p>
-              </Card>
-            ) : (
-              <div className="space-y-1">
-                {messages.map((message) => (
-                  <MessageBubble key={message.id} message={message} isOwnMessage={message.userId === user?.uid} />
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
+            {/* Chat messages area */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {messages.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <Sparkles className="h-8 w-8 mx-auto mb-4 text-primary" />
+                  <h3 className="font-semibold mb-2">Welcome to the room!</h3>
+                  <p className="text-muted-foreground">Start the conversation by sending the first message.</p>
+                </Card>
+              ) : (
+                <div className="space-y-1">
+                  {messages.map((message) => (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      isOwnMessage={message.userId === user?.uid}
+                      onAskAI={(msg) => {
+                        setShowAIAssistant(true)
+                      }}
+                    />
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
 
-          {/* Message input area */}
-          <div className="border-t border-border p-4">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Input
-                type="text"
-                placeholder={isMobile ? `Message...` : `Message ${roomId}...`}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1"
-                disabled={sending}
-              />
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                id="image-upload"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file && user) {
-                    setSending(true);
-                    try {
-                      const result = await uploadImage(file);
-                      await sendMessage(roomId, "Shared an image", user.uid, username, "image", undefined, result.secure_url, result.public_id);
-                    } catch (error) {
-                      console.error("Failed to upload image:", error);
-                    } finally {
-                      setSending(false);
-                      e.target.value = ''; // Reset the input
+            {/* Message input area */}
+            <div className="border-t border-border p-4">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder={isMobile ? `Message...` : `Message ${roomId}...`}
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="flex-1"
+                  disabled={sending}
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  id="image-upload"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file && user) {
+                      setSending(true);
+                      try {
+                        const result = await uploadImage(file);
+                        await sendMessage(roomId, "Shared an image", user.uid, username, "image", undefined, result.secure_url, result.public_id);
+                      } catch (error) {
+                        console.error("Failed to upload image:", error);
+                      } finally {
+                        setSending(false);
+                        e.target.value = ''; // Reset the input
+                      }
                     }
-                  }
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById("image-upload")?.click()}
-                disabled={sending}
-                className="px-3 flex-shrink-0"
-                title="Share Image"
-              >
-                <ImageIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowCodeEditor(true)}
-                disabled={sending}
-                className="px-3 flex-shrink-0"
-                title="Share Code"
-              >
-                <CodeIcon className="h-4 w-4" />
-              </Button>
-              <Button type="submit" disabled={!newMessage.trim() || sending} className="flex-shrink-0">
-                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </Button>
-            </form>
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById("image-upload")?.click()}
+                  disabled={sending}
+                  className="px-3 flex-shrink-0"
+                  title="Share Image"
+                >
+                  <ImageIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCodeEditor(true)}
+                  disabled={sending}
+                  className="px-3 flex-shrink-0"
+                  title="Share Code"
+                >
+                  <CodeIcon className="h-4 w-4" />
+                </Button>
+                <Button type="submit" disabled={!newMessage.trim() || sending} className="flex-shrink-0">
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </Button>
+              </form>
+            </div>
           </div>
+
+          {/* Desktop AI Assistant Panel - Split Screen */}
+          {!isMobile && showAIAssistant && (
+            <div className="w-96 border-l border-border bg-card flex flex-col">
+              <AIAssistantPanel
+                isOpen={showAIAssistant}
+                onToggle={() => setShowAIAssistant(!showAIAssistant)}
+                chatMessages={messages}
+                currentRoom={roomId}
+                isMinimized={false}
+                onMinimizeToggle={() => {}}
+                onSendMessage={async (text, type = "text", imageUrl, imageId) => {
+                  if (!user) return;
+                  await sendMessage(roomId, text, user.uid, username, type, undefined, imageUrl, imageId);
+                }}
+                isSplitScreen={true}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       <CodeEditorModal open={showCodeEditor} onOpenChange={setShowCodeEditor} onSendCode={handleSendCode} />
 
-      <AIAssistantPanel
-        isOpen={showAIAssistant}
-        onToggle={() => setShowAIAssistant(!showAIAssistant)}
-        chatMessages={messages}
-        currentRoom={roomId}
-        isMinimized={aiMinimized}
-        onMinimizeToggle={() => setAiMinimized(!aiMinimized)}
-        onSendMessage={async (text, type = "text", imageUrl, imageId) => {
-          if (!user) return;
-          await sendMessage(roomId, text, user.uid, username, type, undefined, imageUrl, imageId);
-        }}
-      />
+      {/* Mobile AI Assistant - Full Screen Modal */}
+      {isMobile && showAIAssistant && (
+        <AIAssistantPanel
+          isOpen={showAIAssistant}
+          onToggle={() => setShowAIAssistant(!showAIAssistant)}
+          chatMessages={messages}
+          currentRoom={roomId}
+          isMinimized={aiMinimized}
+          onMinimizeToggle={() => setAiMinimized(!aiMinimized)}
+          onSendMessage={async (text, type = "text", imageUrl, imageId) => {
+            if (!user) return;
+            await sendMessage(roomId, text, user.uid, username, type, undefined, imageUrl, imageId);
+          }}
+          isSplitScreen={false}
+        />
+      )}
     </div>
   )
 }
