@@ -363,7 +363,7 @@ export default function LandingPage() {
       </div>
       
       <div className={cn("text-center text-muted-foreground", isMobile ? "text-xs" : "text-xs")}>
-        Built with ❤️ by ALLIED
+        Built with ❤️ by Naveen @ Allied
       </div>
     </div>
   )

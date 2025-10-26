@@ -16,7 +16,7 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: "Guest Chat Rooms - Code Collaboration",
+  title: "Code Room - Code Collaboration",
   description: "Anonymous chat rooms for code sharing and collaboration in college computer labs",
   generator: "v0.app",
 }
