@@ -139,7 +139,7 @@ export function AIAssistantPanel({
 
       if (error instanceof Error) {
         if (error.message.includes("Google Generative AI API key is not configured")) {
-          errorContent = "⚠️ AI service is not configured. Please set up your Google API key in the .env.local file. You can get one from https://ai.google.dev/"
+          errorContent = "⚠��� AI service is not configured. Please set up your Google API key in the .env.local file. You can get one from https://ai.google.dev/"
         } else if (error.message.includes("replace 'your_google_api_key_here'")) {
           errorContent = "⚠️ Please replace the placeholder API key with your actual Google API key in .env.local file."
         } else if (error.message.includes("configuration error")) {
@@ -164,60 +164,76 @@ export function AIAssistantPanel({
   // Desktop Split Screen Mode
   if (isSplitScreen && !isMobile) {
     return (
-      <div className="w-full h-full flex flex-col bg-card">
+      <div className="w-full h-full flex flex-col bg-card border-l">
         {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b">
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Bot className="h-5 w-5 text-primary flex-shrink-0" />
-            <span className="font-semibold">AI Assistant</span>
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Bot className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold text-sm block">AI Assistant</span>
+              <span className="text-xs text-muted-foreground truncate block">{currentRoom}</span>
+            </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onToggle} className="h-8 w-8 p-0 flex-shrink-0">
+          <Button variant="ghost" size="sm" onClick={onToggle} className="h-7 w-7 p-0 flex-shrink-0">
             <X className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Messages */}
         <ScrollArea className="flex-1 min-w-0">
-          <div className="space-y-3 p-3">
-            {aiMessages.map((message) => (
-              <div
-                key={message.id}
-                className={cn("flex gap-2 min-w-0", message.role === "user" ? "justify-end" : "justify-start")}
-              >
-                {message.role === "assistant" && (
-                  <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot className="h-3 w-3 text-primary" />
-                  </div>
-                )}
-
-                <div
-                  className={cn(
-                    "p-2 rounded-lg text-sm break-words overflow-hidden",
-                    message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
-                  )}
-                  style={{ maxWidth: "calc(100% - 2rem)" }}
-                >
-                  <div className="whitespace-pre-wrap break-words">{message.content}</div>
-                  <div className="text-xs opacity-70 mt-1">
-                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </div>
+          <div className="space-y-2.5 p-3">
+            {aiMessages.length === 1 && !isLoading ? (
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Bot className="h-3 w-3 text-primary" />
                 </div>
-
-                {message.role === "user" && (
-                  <div className="w-6 h-6 bg-secondary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <User className="h-3 w-3 text-secondary" />
-                  </div>
-                )}
+                <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-3 rounded-lg text-xs leading-relaxed text-muted-foreground break-words overflow-hidden flex-1 min-w-0">
+                  {aiMessages[0].content}
+                </div>
               </div>
-            ))}
+            ) : (
+              aiMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn("flex gap-2 min-w-0 animate-in fade-in duration-300", message.role === "user" ? "justify-end" : "justify-start")}
+                >
+                  {message.role === "assistant" && (
+                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot className="h-3 w-3 text-primary" />
+                    </div>
+                  )}
+
+                  <div
+                    className={cn(
+                      "px-3 py-2 rounded-lg text-xs break-words overflow-hidden",
+                      message.role === "user"
+                        ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm"
+                        : "bg-muted/60 text-foreground",
+                    )}
+                    style={{ maxWidth: "calc(100% - 2rem)" }}
+                  >
+                    <div className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</div>
+                  </div>
+
+                  {message.role === "user" && (
+                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <User className="h-3 w-3 text-primary" />
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
 
             {isLoading && (
               <div className="flex gap-2 justify-start">
-                <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Bot className="h-3 w-3 text-primary" />
                 </div>
-                <div className="bg-muted p-2 rounded-lg flex items-center">
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                <div className="bg-muted/60 px-3 py-2 rounded-lg flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                  <span className="text-xs text-muted-foreground">Thinking...</span>
                 </div>
               </div>
             )}
@@ -233,24 +249,24 @@ export function AIAssistantPanel({
             size="sm"
             onClick={handleAnalyzeLatestCode}
             disabled={isLoading}
-            className="w-full text-xs bg-transparent"
+            className="w-full text-xs h-8 hover:bg-primary/5"
           >
-            <Sparkles className="h-3 w-3 mr-1" />
-            Analyze Code
+            <Sparkles className="h-3 w-3 mr-1.5" />
+            Analyze Latest Code
           </Button>
         </div>
 
         {/* Input */}
-        <div className="p-3 border-t">
+        <div className="p-3 border-t bg-muted/30">
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <Input
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Ask..."
-              className="flex-1 text-sm"
+              placeholder="Ask AI..."
+              className="flex-1 text-xs h-8 bg-background"
               disabled={isLoading}
             />
-            <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading} className="px-3">
+            <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading} className="px-2.5 h-8">
               <Send className="h-3 w-3" />
             </Button>
           </form>
@@ -262,63 +278,78 @@ export function AIAssistantPanel({
   // Mobile: Full screen overlay
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-50 bg-background">
+      <div className="fixed inset-0 z-50 bg-background flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-card">
-          <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-primary" />
-            <span className="font-semibold">AI Assistant</span>
-            <Badge variant="secondary" className="text-xs">
-              {currentRoom.length > 10 ? `${currentRoom.slice(0, 10)}...` : currentRoom}
-            </Badge>
+        <div className="flex items-center justify-between px-4 py-3.5 border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="font-semibold text-base">AI Assistant</h1>
+              <Badge variant="secondary" className="text-xs mt-1">
+                {currentRoom.length > 15 ? `${currentRoom.slice(0, 15)}...` : currentRoom}
+              </Badge>
+            </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onToggle} className="h-8 w-8 p-0">
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="sm" onClick={onToggle} className="h-8 w-8 p-0 flex-shrink-0 -mr-2">
+            <X className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 p-4 min-w-0" style={{ height: 'calc(100vh - 140px)' }}>
-          <div className="space-y-3">
-            {aiMessages.map((message) => (
-              <div
-                key={message.id}
-                className={cn("flex gap-2 min-w-0", message.role === "user" ? "justify-end" : "justify-start")}
-              >
-                {message.role === "assistant" && (
-                  <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot className="h-3 w-3 text-primary" />
-                  </div>
-                )}
-
-                <div
-                  className={cn(
-                    "p-3 rounded-lg text-sm break-words overflow-hidden",
-                    message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
-                  )}
-                  style={{ maxWidth: "85%" }}
-                >
-                  <div className="whitespace-pre-wrap break-words">{message.content}</div>
-                  <div className="text-xs opacity-70 mt-2">
-                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </div>
+        <ScrollArea className="flex-1 min-w-0">
+          <div className="space-y-3 p-4">
+            {aiMessages.length === 1 && !isLoading ? (
+              <div className="flex items-start gap-3">
+                <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Bot className="h-3.5 w-3.5 text-primary" />
                 </div>
-
-                {message.role === "user" && (
-                  <div className="w-6 h-6 bg-secondary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <User className="h-3 w-3 text-secondary" />
-                  </div>
-                )}
+                <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-xl text-sm leading-relaxed text-muted-foreground break-words overflow-hidden flex-1 min-w-0">
+                  {aiMessages[0].content}
+                </div>
               </div>
-            ))}
+            ) : (
+              aiMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn("flex gap-3 min-w-0 animate-in fade-in duration-300", message.role === "user" ? "justify-end" : "justify-start")}
+                >
+                  {message.role === "assistant" && (
+                    <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                  )}
+
+                  <div
+                    className={cn(
+                      "px-4 py-2.5 rounded-2xl text-sm break-words overflow-hidden",
+                      message.role === "user"
+                        ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm"
+                        : "bg-muted/60 text-foreground",
+                    )}
+                    style={{ maxWidth: "85%" }}
+                  >
+                    <div className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</div>
+                  </div>
+
+                  {message.role === "user" && (
+                    <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <User className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
 
             {isLoading && (
-              <div className="flex gap-2 justify-start">
-                <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="h-3 w-3 text-primary" />
+              <div className="flex gap-3 justify-start">
+                <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Bot className="h-3.5 w-3.5 text-primary" />
                 </div>
-                <div className="bg-muted p-3 rounded-lg flex items-center">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="bg-muted/60 px-4 py-2.5 rounded-2xl flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Thinking...</span>
                 </div>
               </div>
             )}
@@ -328,34 +359,27 @@ export function AIAssistantPanel({
         </ScrollArea>
 
         {/* Quick Actions */}
-        <div className="px-4 py-2 border-t bg-muted/30">
+        <div className="px-4 py-3 border-t bg-muted/30">
           <Button
             variant="outline"
             size="sm"
             onClick={handleAnalyzeLatestCode}
             disabled={isLoading}
-            className="w-full text-xs"
+            className="w-full text-sm h-10 hover:bg-primary/5 font-medium"
           >
-            <Sparkles className="h-3 w-3 mr-1" />
+            <Sparkles className="h-4 w-4 mr-2" />
             Analyze Latest Code
           </Button>
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t bg-card">
+        <div className="px-4 py-3 border-t bg-card">
           <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-            <Input
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Ask me anything..."
-              className="flex-1 text-sm"
-              disabled={isLoading}
-            />
             <Input
               type="file"
               accept="image/*"
               className="hidden"
-              id="image-upload"
+              id="image-upload-mobile"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -376,13 +400,21 @@ export function AIAssistantPanel({
               variant="ghost"
               size="sm"
               disabled={isLoading}
-              onClick={() => document.getElementById("image-upload")?.click()}
-              className="px-3"
+              onClick={() => document.getElementById("image-upload-mobile")?.click()}
+              className="px-2 h-10"
+              title="Share Image"
             >
-              <ImageIcon className="h-4 w-4" />
+              <ImageIcon className="h-5 w-5" />
             </Button>
-            <Button type="submit" size="sm" disabled={!inputMessage.trim() || isLoading} className="px-3">
-              <Send className="h-3 w-3" />
+            <Input
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Ask AI..."
+              className="flex-1 text-sm h-10 bg-muted/50"
+              disabled={isLoading}
+            />
+            <Button type="submit" disabled={!inputMessage.trim() || isLoading} className="px-3 h-10 font-medium">
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </form>
         </div>

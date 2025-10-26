@@ -4,7 +4,7 @@ import type { Message } from "@/lib/firebase"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Code, User, Copy, Check, Download } from "lucide-react"
+import { Code, User, Copy, Check, Download, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -14,9 +14,10 @@ import Image from "next/image"
 interface MessageBubbleProps {
   message: Message
   isOwnMessage: boolean
+  onAskAI?: (code: string, language: string) => void
 }
 
-export function MessageBubble({ message, isOwnMessage }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwnMessage, onAskAI }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false)
   const isMobile = useIsMobile()
 
@@ -96,18 +97,31 @@ export function MessageBubble({ message, isOwnMessage }: MessageBubbleProps) {
                     {getLanguageLabel(message.codeLanguage || "plaintext")}
                   </Badge>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={copyToClipboard} 
-                  className={cn(isMobile ? "h-6 w-6 p-0" : "h-8 w-8 p-0")}
-                >
-                  {copied ? (
-                    <Check className={cn("text-green-600", isMobile ? "h-2.5 w-2.5" : "h-3 w-3")} />
-                  ) : (
-                    <Copy className={cn(isMobile ? "h-2.5 w-2.5" : "h-3 w-3")} />
+                <div className="flex items-center gap-1">
+                  {onAskAI && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onAskAI(message.text, message.codeLanguage || "plaintext")}
+                      className={cn("text-primary hover:text-primary hover:bg-primary/10", isMobile ? "h-6 w-6 p-0" : "h-8 w-8 p-0")}
+                      title="Ask AI about this code"
+                    >
+                      <Sparkles className={cn(isMobile ? "h-2.5 w-2.5" : "h-3 w-3")} />
+                    </Button>
                   )}
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={copyToClipboard}
+                    className={cn(isMobile ? "h-6 w-6 p-0" : "h-8 w-8 p-0")}
+                  >
+                    {copied ? (
+                      <Check className={cn("text-green-600", isMobile ? "h-2.5 w-2.5" : "h-3 w-3")} />
+                    ) : (
+                      <Copy className={cn(isMobile ? "h-2.5 w-2.5" : "h-3 w-3")} />
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {/* Code content */}

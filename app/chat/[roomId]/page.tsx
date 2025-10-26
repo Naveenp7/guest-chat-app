@@ -257,7 +257,14 @@ export default function ChatRoomPage() {
               ) : (
                 <div className="space-y-1">
                   {messages.map((message) => (
-                    <MessageBubble key={message.id} message={message} isOwnMessage={message.userId === user?.uid} />
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      isOwnMessage={message.userId === user?.uid}
+                      onAskAI={(code, language) => {
+                        setShowAIAssistant(true)
+                      }}
+                    />
                   ))}
                   <div ref={messagesEndRef} />
                 </div>
